@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>canvas一笔画完辅助</title>
+  <style>
+    #chooseForm{
+	  width:600px;
+	  height:80px;
+	  margin:10px auto;
+	  font-size:20px;
+	  font-family:arial;
+	}
+	#chooseForm fieldset[name="formMain"]{
+	  border:0;
+	}
+	 #chooseForm [name="rowCount"]{
+	   margin-right:100px;
+	 }
+	 #chooseForm select{
+	   width:60px;
+	   height:20px;
+	   text-indent:18px;
+	 }
+
+	 #myCanvas{
+	    position:absolute;
+		left:0;
+		top:0;
+		bottom:0;
+		right:0;
+		margin:auto;
+	   border:1px solid yellow;
+	  
+	 }
+
+	 #myBtn{
+	  position:absolute;
+	   right:100px;
+	   bottom:180px;
+	   width:100px;
+	   height:40px;
+	   border-radius:10%;
+       box-shadow:2px 2px 10px 4px #666;
+	 }
+  </style>
+ </head>
+ <body>
+   <form name="pageForm" id="chooseForm">
+     <fieldset name="formMain">
+     
+	     <span>请选行数：</span>
+       <select name="rowCount" id="myRow">
+	       <option value="1">1</option>
+		   <option value="2">2</option>
+		   <option value="3">3</option>
+		   <option value="4">4</option>
+		   <option value="5">5</option>
+		   <option value="6">6</option>
+		   <option value="7" selected>7</option>
+		   <option value="8">8</option>
+		   <option value="9">9</option>
+	   </select>
+         <span>请选列数：</span>
+	  <select name="colCount">
+		   <option value="1">1</option>
+		   <option value="2">2</option>
+		   <option value="3">3</option>
+		   <option value="4">4</option>
+		   <option value="5">5</option>
+		   <option value="6">6</option>
+		   <option value="7" selected>7</option>
+		   <option value="8">8</option>
+	 </select>
+  </fieldset>
+ </form>
+  <canvas id="myCanvas" width="200" height="200">换个浏览器试试</canvas>
+
+  <button name="btn" type="button" id="myBtn">开始查找路径</button>
+
+
+  
+
+ <script>
+  var submitBtn=document.querySelector("#myBtn");
+  var my_canvas=document.querySelector("#myCanvas");
+  var context=my_canvas.getContext("2d");
+   var page_form=document.forms["pageForm"];
+   var select_row=page_form.elements["rowCount"];
+   var select_col=page_form.elements["colCount"];
+   var row_count=select_row.options[select_row.selectedIndex].value;
+   var col_count=select_col.options[select_col.selectedIndex].value;
+   var startPosition=0;
+   var dimensionArr=null;
+
+   //起点的坐标
+   var startX=-1;
+   var startY=-1;
+  
+   var hasRunNum=0;
+   var resultArr=null;
+   var re_arr=new Array();
+/*选择行数*/
+   select_row.addEventListener("change",function(event){
+      var that=document.querySelector("#myRow");
+	  var len=that.options.length;
+	  row_count=that.options[that.selectedIndex].value;
+     my_canvas.width=col_count*50;
+	 my_canvas.height=row_count*50;
+	setTimeout(function(){
+	  clearCanvas();
+	  strokeLineForCanvas();
+	 },0);
+	 dimensionArr=createDimensionArr(row_count,col_count);
+	 startPosition=0;
+	 startX=-1;
+     startY=-1;
+
+	 hasRunNum=0;
+	 re_arr=new Array();
+	 console.log("row_count:"+row_count);
+	 console.log("col_count:"+col_count);
+	  if(that.selectedIndex>=len-2){
+		  var initialText=that.options[len-1].value;
+		  var startNum=parseInt(initialText)+1;
+		  var endNum=startNum+4;
+		  for(var i=startNum;i<=endNum;i++){
+	        var newOption=new Option(i,i);
+		    that.appendChild(newOption);
+		  }
+	  }
+   },false);
+
+ /*选择列数*/
+   select_col.addEventListener("change",function(){
+      var that=event.currentTarget;
+	  var len=that.options.length;
+	  col_count=select_col.options[select_col.selectedIndex].value;
+	 
+	 my_canvas.width=col_count*50;
+	 my_canvas.height=row_count*50;
+	 setTimeout(function(){
+	  clearCanvas();
+	  strokeLineForCanvas();
+	 },0);
+	  
+	  dimensionArr=createDimensionArr(row_count,col_count);
+	  startPosition=0;
+	  startX=-1;
+      startY=-1;
+	  hasRunNum=0;
+	  re_arr=new Array();
+	  console.log("row_count:"+row_count);
+	 console.log("col_count:"+col_count);
+	  if(that.selectedIndex>=len-2){
+		  var initialText=that.options[len-1].value;
+		  var startNum=parseInt(initialText)+1;
+		  var endNum=startNum+4;
+		  for(var i=startNum;i<=endNum;i++){
+	        var newOption=new Option(i,i);
+		    that.appendChild(newOption);
+		  }
+	  }
+   },false);
+ 
+
+ /*初始化二维数组*/
+  function createDimensionArr(m,n){
+     var twoDisArr=new Array(m);
+	 for(var i=0;i<m;i++){
+	    twoDisArr[i]=new Array();
+        twoDisArr[i].length=n;
+		for(var j=0;j<n;j++){
+		  twoDisArr[i][j]=0;
+		}
+	 }
+	 return twoDisArr;
+  }
+
+
+/*绘制整体的格子*/
+  function strokeLineForCanvas(){
+	
+     for(var i=0;i<=row_count;i++){
+		context.lineWidth=row_count%2+1;
+	    context.beginPath();
+		context.moveTo(0,i*50);
+		context.lineTo(col_count*50,i*50);
+		context.closePath();
+		context.stroke();
+	 }
+   for(var j=0;j<=col_count;j++){
+		context.lineWidth=col_count%2+1;
+	    context.beginPath();
+		context.moveTo(j*50,0);
+		context.lineTo(j*50,row_count*50);
+		context.closePath();
+		context.stroke();
+	 }
+
+  }
+
+/*清除画布*/
+  function clearCanvas(){
+	
+    context.clearRect(0,0,my_canvas.width,my_canvas.height);
+  }
+
+/*填充一个格子*/
+ function fillOneRect(leftNum,topNum,styleColor){
+    context.fillStyle=styleColor;
+	context.fillRect(leftNum*50+1,topNum*50+1,48,48);
+ }
+
+/*判断格子是否全部被填满*/
+ function isSuccess(arr){
+   for(var i=0;i<row_count;i++){
+     for(var j=0;j<col_count;j++){
+	   if(arr[i][j]==0){
+	     return false;
+	   }
+	 }
+   }
+   return true;
+ }
+
+
+/*复制原二维数组*/
+   function copyArray(initialArr){
+	    var m=initialArr.length;
+	    var n=initialArr[0].length;
+       var newArray=new Array(m);
+	  for(var i=0;i<m;i++){
+		  newArray[i]=new Array();
+	   	  newArray[i].length=n;
+	    for(var j=0;j<n;j++){
+	        newArray[i][j]=initialArr[i][j];
+	    }
+	  }
+	  return newArray;
+   }
+
+   /*复制resultList*/
+   function copyResultList(resultList){
+	   var newList=null;
+	   
+      if(resultList&&resultList.length>0){
+		  var len=resultList.length;
+		  newList=new Array(len);
+	     for(var i=0;i<len;i++){
+		     newList[i]=resultList[i];
+		 }
+	  }
+	  return newList;
+   }
+
+
+  /*往左走*/
+ function canLeft(array,item){
+     var yIdx=item.y-1;
+	 var xIdx=item.x;
+	 if(yIdx<0||array[xIdx][yIdx]>0){
+	   return false;
+	 }
+	    
+     return true;
+ }
+
+/*向右走*/
+  function canRight(array,item){
+     var yIdx=item.y+1;
+	 var xIdx=item.x;
+	 if(yIdx>=col_count||array[xIdx][yIdx]>0){
+	   return false;
+	 }
+	  
+      return true;
+ }
+
+/*向下走*/
+ function canBottom(array,item){
+     var yIdx=item.y;
+	 var xIdx=item.x+1;
+	 if(xIdx>=row_count||array[xIdx][yIdx]>0){
+	   return false;
+	 }
+      return true;
+ }
+
+ /*向上走*/
+ function canTop(array,item){
+     var yIdx=item.y;
+	 var xIdx=item.x-1;
+	 if(xIdx<0||array[xIdx][yIdx]>0){
+	   return false;
+	 }    
+        return true;
+ }
+ 
+/*if(!(canLeft(dimensionArray,tempArrayItem)||canTop(dimensionArray,tempArrayItem)||canRight(dimensionArray,tempArrayItem)||canBottom(dimensionArray,tempArrayItem))){
+				 dimensionArray[tempArrayItem.x][tempArrayItem.y]=0;
+				 resultLists.pop();
+				 return;
+			}*/
+
+/*trace arr*/
+function tracerArray(dimensionArray,tempArrayItem,resultLists){
+ 
+	if(tempArrayItem){
+			dimensionArray[tempArrayItem.x][tempArrayItem.y]=1;
+			 resultLists.push(tempArrayItem);
+			if(isSuccess(dimensionArray)){
+				resultArr=copyResultList(resultLists);
+				re_arr.push(resultArr);
+				 console.log(resultArr);
+				 return true;
+			 }
+			
+		   var leftItem=null;
+		   var topItem=null;
+		   var rightItem=null;
+		   var bottomItem=null;
+
+
+          if(canLeft(dimensionArray,tempArrayItem)){
+		    leftItem={x:tempArrayItem.x,y:tempArrayItem.y-1};
+		  }
+          if(canTop(dimensionArray,tempArrayItem)){
+		     topItem={x:tempArrayItem.x-1,y:tempArrayItem.y};
+			
+		  }
+		  if(canRight(dimensionArray,tempArrayItem)){
+		    rightItem={x:tempArrayItem.x,y:tempArrayItem.y+1};
+		  }
+
+		  if(canBottom(dimensionArray,tempArrayItem)){
+		      bottomItem={x:tempArrayItem.x+1,y:tempArrayItem.y};
+		  }
+
+		 var leftRe=tracerArray(dimensionArray,leftItem,resultLists);
+		 var topRe=tracerArray(dimensionArray,topItem,resultLists);
+		 var rightRe=tracerArray(dimensionArray,rightItem,resultLists);
+		 var bottomRe=tracerArray(dimensionArray,bottomItem,resultLists);
+		   dimensionArray[tempArrayItem.x][tempArrayItem.y]=0;
+		   resultLists.pop();
+		 
+	}
+	 	  
+  }
+
+/*结果*/
+function getResult(){
+console.log(startX);
+console.log(startY);
+  var copyArr=copyArray(dimensionArr);
+  var startObj={x:startX,y:startY};
+  var lists=new Array();
+
+  tracerArray(copyArr,startObj,lists);
+  if(re_arr!=null&&re_arr.length>0){
+    var n=re_arr[0].length;
+	var i=0;
+
+     window.setTimeout(function(){
+		 runRect(i,n)
+	 },400);
+     
+   
+  }else{
+    alert("没有结果。。。");
+  }
+}
+
+
+function runRect(i,n){
+	context.clearRect(re_arr[0][i].y*50+1,re_arr[0][i].x*50+1,48,48);
+	fillOneRect(re_arr[0][i].y,re_arr[0][i].x,getColor());
+	context.fillStyle="black";
+	context.font="bold 32px 黑体";
+	context.fillText(i,re_arr[0][i].y*50+10,re_arr[0][i].x*50+30);
+  if(i<n-1){
+     console.log("666");
+     window.setTimeout(function(){
+		 runRect(i+1,n)
+	 },400);
+  }
+
+}
+
+
+function getColor(){
+  var r=Math.floor(Math.random()*256);
+  var g=Math.floor(Math.random()*256);
+  var b=Math.floor(Math.random()*256);
+ return "rgb("+r+","+g+","+b+")";
+}
+  window.onload=function(){
+     my_canvas.width=col_count*50;
+	 my_canvas.height=row_count*50;
+	 strokeLineForCanvas();
+	 dimensionArr=createDimensionArr(row_count,col_count);
+	 
+	 //鼠标选择已走过的格子和起点
+	  my_canvas.addEventListener("mousedown",function(event){
+	     var that=event.currentTarget;
+		 var innerLeft=event.clientX-that.offsetLeft;
+		 var innerTop=event.clientY-that.offsetTop;
+	     var offsetNumLeft=Math.floor(innerLeft/50);
+		 var offsetNumTop=Math.floor(innerTop/50);
+		 
+		 
+		 if(event.button==0){
+			 if(dimensionArr[offsetNumTop][offsetNumLeft]==0){
+		       fillOneRect(offsetNumLeft,offsetNumTop,"yellow");
+		      dimensionArr[offsetNumTop][offsetNumLeft]=1;
+			  hasRunNum++;
+			 }else{
+		       if(dimensionArr[offsetNumTop][offsetNumLeft]==2){
+			     startPosition=0;
+				 startX=-1;
+			     startY=-1;
+			  }
+			  context.fillStyle="white";
+			  context.fillRect(offsetNumLeft*50+1,offsetNumTop*50+1,48,48);
+			  dimensionArr[offsetNumTop][offsetNumLeft]=0;
+			  hasRunNum--;
+			 }
+		 }else{
+			 event.preventDefault();
+			if(startPosition==0&&dimensionArr[offsetNumTop][offsetNumLeft]<1){
+		      fillOneRect(offsetNumLeft,offsetNumTop,"red");
+			  dimensionArr[offsetNumTop][offsetNumLeft]=2;
+               startX=offsetNumTop;
+			   startY=offsetNumLeft;
+			   startPosition=1;
+			   hasRunNum++;
+			}
+		 
+		 }
+	  });
+
+	  
+	  submitBtn.addEventListener("click",function(){
+	     console.log("正在计算结果.........");
+		 if(startX==-1||startY==-1){
+		      console.log("请右击选择起点");
+			  return;
+		 }
+	
+         getResult();
+	  },false);
+
+	  document.addEventListener("keydown",function(event){
+	     if(event.keyCode==32){
+		     var rowSel=document.querySelector("#myRow");
+			 var rowOptions=rowSel.options;
+             if(rowSel.selectedIndex==5){
+				rowOptions.item(5).removeAttribute("selected");
+			   rowOptions.item(6).selected=true;
+			 }else if(rowSel.selectedIndex==6){
+				 rowOptions.item(6).removeAttribute("selected");
+			   rowOptions.item(7).selected=true;
+			 }else if(rowSel.selectedIndex==7){
+				 rowOptions.item(7).removeAttribute("selected");
+			   rowOptions.item(8).selected=true;
+			 }else{
+			  rowOptions.item(rowSel.selectedIndex).removeAttribute("selected");
+			   rowOptions.item(5).selected=true;
+			 }
+             console.log(rowSel.selectedIndex);
+				row_count=rowSel.options[rowSel.selectedIndex].value;
+				 my_canvas.width=col_count*50;
+				 my_canvas.height=row_count*50;
+				setTimeout(function(){
+				  clearCanvas();
+				  strokeLineForCanvas();
+				 },0);
+				 dimensionArr=createDimensionArr(row_count,col_count);
+				 startPosition=0;
+				 startX=-1;
+				 startY=-1;
+
+				 hasRunNum=0;
+				 re_arr=new Array();
+		
+		 }
+	  },false);
+
+  }
+
+  
+ </script>
+ </body>
+</html>
